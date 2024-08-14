@@ -16,6 +16,8 @@ import {
   Card,
   CardContent
 } from '@mui/material'
+import { db } from '../../firebase';
+import { collection, doc, getDoc } from 'firebase/firestore';
 
 export default function Generate() {
   const [text, setText] = useState('')
