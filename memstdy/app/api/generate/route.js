@@ -35,6 +35,15 @@ export async function POST(req){
             response_format: { type: 'json_object' },
         })
     })
-    const flashcards = JSON.parse(completion.choices[0].message.content)
-    return NextResponse.json(flashcards.flashcards)
+    const result = await completion.json();
+    const content = result.choices[0].message.content;
+
+    const jsonMatch = content.match(/{[\s\S]*}/); // Matches the JSON object in the response
+    if (!jsonMatch) {
+        throw new Error('Failed to extract JSON from the response.');
+    }
+    const jsonString = jsonMatch[0]; // Extracted JSON string
+    const flashcards = JSON.parse(jsonString);
+    console.log(flashcards)
+    return NextResponse.json(flashcards.flashcards);
 }
