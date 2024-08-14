@@ -14,6 +14,8 @@ export default function Generate() {
   const [flashcards, setFlashcards] = useState([])
   const [setName, setSetName] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
+  const handleOpenDialog = () => setDialogOpen(true)
+  const handleCloseDialog = () => setDialogOpen(false)
 
   const handleSubmit = async () => {
     if (!text.trim()) {
