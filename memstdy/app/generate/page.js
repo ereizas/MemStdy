@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react';
 import {
   Container,
   TextField,
@@ -14,107 +14,102 @@ import {
   DialogActions,
   Grid,
   Card,
-  CardContent
-} from '@mui/material'
+  CardContent,
+  CardActionArea,
+} from '@mui/material';
 import { db } from '../../firebase';
-import { collection, doc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, writeBatch, setDoc } from 'firebase/firestore';
+import { useUser, useRouter } from 'your-auth-library'; // Ensure you import your auth hooks or functions
 
-
-// flashcard overveiw
-
-export default function Flashcard() {
+export default function FlashcardApp() {
   const { isLoaded, isSignedIn, user } = useUser();
   const [flashcards, setFlashcards] = useState([]);
+  const [text, setText] = useState('');
+  const [setName, setSetName] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
   const router = useRouter();
 
-  // ... (rest of the component)
-
-    // Fetching Flashcard Sets
-    useEffect(() => {
-      async function getFlashcards() {
-        if (!user) return;
-        const docRef = doc(collection(db, 'users'), user.id);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const collections = docSnap.data().flashcards || [];
-          setFlashcards(collections);
-        } else {
-          await setDoc(docRef, { flashcards: [] });
-        }
+  // Fetching Flashcard Sets
+  useEffect(() => {
+    async function getFlashcards() {
+      if (!user) return;
+      const docRef = doc(collection(db, 'users'), user.id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const collections = docSnap.data().flashcards || [];
+        setFlashcards(collections);
+      } else {
+        await setDoc(docRef, { flashcards: [] });
       }
-      getFlashcards();
-    }, [user]);
+    }
+    getFlashcards();
+  }, [user]);
 
-    
-}
-
-
-
-export default function Generate() {
-  const [text, setText] = useState('')
-  const [flashcards, setFlashcards] = useState([])
-  const [setName, setSetName] = useState('')
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const handleOpenDialog = () => setDialogOpen(true)
-  const handleCloseDialog = () => setDialogOpen(false)
+  const handleOpenDialog = () => setDialogOpen(true);
+  const handleCloseDialog = () => setDialogOpen(false);
 
   const handleSubmit = async () => {
     if (!text.trim()) {
-      alert('Please enter some text to generate flashcards.')
-      return
+      alert('Please enter some text to generate flashcards.');
+      return;
     }
-  
+
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
         body: text,
-      })
-  
+      });
+
       if (!response.ok) {
-        throw new Error('Failed to generate flashcards')
+        throw new Error('Failed to generate flashcards');
       }
-  
-      const data = await response.json()
-      setFlashcards(data)
+
+      const data = await response.json();
+      setFlashcards(data);
     } catch (error) {
-      console.error('Error generating flashcards:', error)
-      alert('An error occurred while generating flashcards. Please try again.')
+      console.error('Error generating flashcards:', error);
+      alert('An error occurred while generating flashcards. Please try again.');
     }
-  }
+  };
 
   const saveFlashcards = async () => {
     if (!setName.trim()) {
-      alert('Please enter a name for your flashcard set.')
-      return
+      alert('Please enter a name for your flashcard set.');
+      return;
     }
-  
+
     try {
-      const userDocRef = doc(collection(db, 'users'), user.id)
-      const userDocSnap = await getDoc(userDocRef)
-  
-      const batch = writeBatch(db)
-  
+      const userDocRef = doc(collection(db, 'users'), user.id);
+      const userDocSnap = await getDoc(userDocRef);
+
+      const batch = writeBatch(db);
+
       if (userDocSnap.exists()) {
-        const userData = userDocSnap.data()
-        const updatedSets = [...(userData.flashcardSets || []), { name: setName }]
-        batch.update(userDocRef, { flashcardSets: updatedSets })
+        const userData = userDocSnap.data();
+        const updatedSets = [...(userData.flashcardSets || []), { name: setName }];
+        batch.update(userDocRef, { flashcardSets: updatedSets });
       } else {
-        batch.set(userDocRef, { flashcardSets: [{ name: setName }] })
+        batch.set(userDocRef, { flashcardSets: [{ name: setName }] });
       }
-  
-      const setDocRef = doc(collection(userDocRef, 'flashcardSets'), setName)
-      batch.set(setDocRef, { flashcards })
-  
-      await batch.commit()
-  
-      alert('Flashcards saved successfully!')
-      handleCloseDialog()
-      setSetName('')
+
+      const setDocRef = doc(collection(userDocRef, 'flashcardSets'), setName);
+      batch.set(setDocRef, { flashcards });
+
+      await batch.commit();
+
+      alert('Flashcards saved successfully!');
+      handleCloseDialog();
+      setSetName('');
     } catch (error) {
-      console.error('Error saving flashcards:', error)
-      alert('An error occurred while saving flashcards. Please try again.')
+      console.error('Error saving flashcards:', error);
+      alert('An error occurred while saving flashcards. Please try again.');
     }
-  }
+  };
+
+  const handleCardClick = (setName) => {
+    // Navigate to the detailed view of the flashcard set
+    router.push(`/flashcards/${setName}`);
+  };
 
   return (
     <Container maxWidth="md">
@@ -141,6 +136,7 @@ export default function Generate() {
           Generate Flashcards
         </Button>
       </Box>
+
       {flashcards.length > 0 && (
         <>
           <Box sx={{ mt: 4 }}>
@@ -194,6 +190,28 @@ export default function Generate() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Displaying Flashcard Sets */}
+      <Box sx={{ mt: 6 }}>
+        <Typography variant="h4" component="h2" gutterBottom>
+          Your Flashcard Sets
+        </Typography>
+        <Grid container spacing={3} sx={{ mt: 4 }}>
+          {flashcards.map((flashcardSet, index) => (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <Card>
+                <CardActionArea onClick={() => handleCardClick(flashcardSet.name)}>
+                  <CardContent>
+                    <Typography variant="h5" component="div">
+                      {flashcardSet.name}
+                    </Typography>
+                  </CardContent>
+                </CardActionArea>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
     </Container>
-  )
+  );
 }
