@@ -19,6 +19,19 @@ import {
 import { db } from '../../firebase';
 import { collection, doc, getDoc } from 'firebase/firestore';
 
+
+// flashcard overveiw
+
+export default function Flashcard() {
+  const { isLoaded, isSignedIn, user } = useUser();
+  const [flashcards, setFlashcards] = useState([]);
+  const router = useRouter();
+
+  // ... (rest of the component)
+}
+
+
+
 export default function Generate() {
   const [text, setText] = useState('')
   const [flashcards, setFlashcards] = useState([])
