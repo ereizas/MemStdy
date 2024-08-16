@@ -52,6 +52,13 @@ export default function Home() {
               Our AI intelligently breaks down your text into flashcards, perfect for studying.
             </Typography>
           </Grid>
+          <Grid item xs={12} md={4}>
+            <Typography variant="h6" gutterBottom>Accessible Anywhere</Typography>
+            <Typography>
+              {' '}
+              Access your flashcards from any device and at any time. Study whenever you need.
+            </Typography>
+          </Grid>
         </Grid>
       </Box>
       <Box sx={{my:6, textAlign:"center"}}>
