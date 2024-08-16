@@ -6,7 +6,8 @@ import {
   Toolbar,
   Typography,
   Button,
-  Box
+  Box,
+  Grid
 } from '@mui/material'
 import Head from'next/head'
 import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
@@ -38,6 +39,19 @@ export default function Home() {
         <Button variant="contained" color="primary" sx={{mt:2}}>
           Get Started
           </Button>
+      </Box>
+      <Box sx = {{my:6}}>
+        <Typography variant="h4" components="h2">
+          Features
+        </Typography>
+        <Grid contained spacing={4}>
+          <Grid item xs={12} md={4}>
+            <Typography variant="h6">Smart Flashcard Generation</Typography>
+            <Typography>
+              {' '}
+              Our AI intelligently breaks down your text into flashcards, perfect for studying.</Typography>
+          </Grid>
+        </Grid>
       </Box>
     </Container>
   )
