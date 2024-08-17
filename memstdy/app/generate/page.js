@@ -1,6 +1,5 @@
-'use client'
-
-import { useState } from 'react';
+'use client';
+import { useState, useEffect } from 'react';
 import {
   Container,
   TextField,
@@ -14,21 +13,33 @@ import {
   DialogActions,
   Grid,
   Card,
-  CardContent
+  CardContent,
+  List,
+  ListItem,
+  ListItemText
 } from '@mui/material';
 import { db } from '../../firebase';
-import { collection, doc, getDoc, setDoc } from 'firebase/firestore';
-import { useUser } from '@clerk/nextjs'; // Import Clerk's useUser hook
+import { collection, doc, getDoc, setDoc, getDocs } from 'firebase/firestore';
+import { useUser } from '@clerk/nextjs';
 
 export default function Generate() {
-  const { user } = useUser(); // Use the useUser hook to get the current user
+  const { user } = useUser();
   const [text, setText] = useState('');
   const [flashcards, setFlashcards] = useState([]);
   const [setName, setSetName] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [viewSetsOpen, setViewSetsOpen] = useState(false);
+  const [flashcardSets, setFlashcardSets] = useState([]);
+  const [selectedSet, setSelectedSet] = useState(null);
+  const [selectedFlashcards, setSelectedFlashcards] = useState([]);
 
   const handleOpenDialog = () => setDialogOpen(true);
   const handleCloseDialog = () => setDialogOpen(false);
+  const handleOpenViewSets = () => setViewSetsOpen(true);
+  const handleCloseViewSets = () => {
+    setViewSetsOpen(false);
+    setSelectedSet(null);
+  };
 
   const handleSubmit = async () => {
     if (!text.trim()) {
@@ -61,15 +72,8 @@ export default function Generate() {
     }
 
     try {
-      const userId = user.id; // Retrieve user ID from Clerk
+      const userId = user.id;
       const userDocRef = doc(db, 'users', userId);
-      
-      // Set or update the flashcard set
-      await setDoc(userDocRef, {
-        flashcardSets: [{ name: setName, flashcards }]
-      }, { merge: true });
-
-      // Alternatively, if you want to set it in a subcollection:
       const setDocRef = doc(collection(userDocRef, 'flashcardSets'), setName);
       await setDoc(setDocRef, { flashcards });
 
@@ -79,6 +83,44 @@ export default function Generate() {
     } catch (error) {
       console.error('Error saving flashcards:', error);
       alert('An error occurred while saving flashcards. Please try again.');
+    }
+  };
+
+  const fetchFlashcardSets = async () => {
+    if (user) {
+      try {
+        const userId = user.id;
+        const userDocRef = doc(db, 'users', userId);
+        const flashcardSetsRef = collection(userDocRef, 'flashcardSets');
+        const querySnapshot = await getDocs(flashcardSetsRef);
+
+        const sets = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setFlashcardSets(sets);
+      } catch (error) {
+        console.error('Error fetching flashcard sets:', error);
+        alert('An error occurred while fetching flashcard sets. Please try again.');
+      }
+    }
+  };
+
+  const handleSetClick = async (setId) => {
+    try {
+      const userId = user.id;
+      const setDocRef = doc(db, 'users', userId, 'flashcardSets', setId);
+      const setDoc = await getDoc(setDocRef);
+
+      if (setDoc.exists()) {
+        setSelectedFlashcards(setDoc.data().flashcards);
+        setSelectedSet(setId);
+      } else {
+        alert('No flashcards found for this set.');
+      }
+    } catch (error) {
+      console.error('Error fetching flashcards:', error);
+      alert('An error occurred while fetching flashcards. Please try again.');
     }
   };
 
@@ -133,6 +175,17 @@ export default function Generate() {
             <Button variant="contained" color="primary" onClick={handleOpenDialog}>
               Save Flashcards
             </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={() => {
+                fetchFlashcardSets();
+                handleOpenViewSets();
+              }}
+              sx={{ ml: 2 }}
+            >
+              View All Flashcard Sets
+            </Button>
           </Box>
         </>
       )}
@@ -158,6 +211,61 @@ export default function Generate() {
           <Button onClick={saveFlashcards} color="primary">
             Save
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={viewSetsOpen} onClose={handleCloseViewSets}>
+        <DialogTitle>View Flashcard Sets</DialogTitle>
+        <DialogContent>
+          {selectedSet ? (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Flashcards in "{selectedSet}" Set
+              </Typography>
+              <Grid container spacing={2}>
+                {selectedFlashcards.map((flashcard, index) => (
+                  <Grid item xs={12} sm={6} md={4} key={index}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="h6">Front:</Typography>
+                        <Typography>{flashcard.front}</Typography>
+                        <Typography variant="h6" sx={{ mt: 2 }}>Back:</Typography>
+                        <Typography>{flashcard.back}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          ) : (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Available Flashcard Sets
+              </Typography>
+              <List>
+                {flashcardSets.map((set) => (
+                  <ListItem
+                    button
+                    key={set.id}
+                    onClick={() => handleSetClick(set.id)}
+                    sx={{
+                      bgcolor: 'background.paper',
+                      color: 'text.primary',
+                      '&:hover': {
+                        bgcolor: 'action.hover',
+                      },
+                      mb: 1,
+                    }}
+                  >
+                    <ListItemText primary={set.name} />
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseViewSets}>Close</Button>
         </DialogActions>
       </Dialog>
     </Container>
