@@ -18,8 +18,10 @@ import {
 } from '@mui/material';
 import { db } from '../../firebase';
 import { collection, doc, getDoc, setDoc } from 'firebase/firestore';
+import { useUser } from '@clerk/nextjs'; // Import Clerk's useUser hook
 
 export default function Generate() {
+  const { user } = useUser(); // Use the useUser hook to get the current user
   const [text, setText] = useState('');
   const [flashcards, setFlashcards] = useState([]);
   const [setName, setSetName] = useState('');
@@ -33,17 +35,17 @@ export default function Generate() {
       alert('Please enter some text to generate flashcards.');
       return;
     }
-  
+
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
         body: text,
       });
-  
+
       if (!response.ok) {
         throw new Error('Failed to generate flashcards');
       }
-  
+
       const data = await response.json();
       setFlashcards(data);
     } catch (error) {
@@ -59,8 +61,7 @@ export default function Generate() {
     }
 
     try {
-      // Replace 'user.id' with actual user ID logic
-      const userId = 'user.id'; // Retrieve user ID from your auth context
+      const userId = user.id; // Retrieve user ID from Clerk
       const userDocRef = doc(db, 'users', userId);
       
       // Set or update the flashcard set
