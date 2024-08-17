@@ -15,12 +15,12 @@ export default function SignUpPage(){
                     MemStdy Flashcard SaaS
                 </Typography>
                 <Button color="inherit">
-                    <Link href="/login" passHref>
+                    <Link href="/sign-in" passHref>
                         Login
                     </Link>
                 </Button>
                 <Button color="inherit">
-                    <Link href="/signup" passHref>
+                    <Link href="/sign-up" passHref>
                         Sign Up
                     </Link>
                 </Button>
@@ -32,7 +32,7 @@ export default function SignUpPage(){
             alignItems="center"
             justifyContent="center"
         >
-            <Typography variant="h4">Sign In</Typography>
+            <Typography variant="h4">Sign up</Typography>
         </Box>
     </Container>
     )
