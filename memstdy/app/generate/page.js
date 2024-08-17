@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState } from 'react';
 import {
   Container,
   TextField,
@@ -15,75 +15,71 @@ import {
   Grid,
   Card,
   CardContent
-} from '@mui/material'
+} from '@mui/material';
 import { db } from '../../firebase';
-import { collection, doc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc } from 'firebase/firestore';
 
 export default function Generate() {
-  const [text, setText] = useState('')
-  const [flashcards, setFlashcards] = useState([])
-  const [setName, setSetName] = useState('')
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const handleOpenDialog = () => setDialogOpen(true)
-  const handleCloseDialog = () => setDialogOpen(false)
+  const [text, setText] = useState('');
+  const [flashcards, setFlashcards] = useState([]);
+  const [setName, setSetName] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const handleOpenDialog = () => setDialogOpen(true);
+  const handleCloseDialog = () => setDialogOpen(false);
 
   const handleSubmit = async () => {
     if (!text.trim()) {
-      alert('Please enter some text to generate flashcards.')
-      return
+      alert('Please enter some text to generate flashcards.');
+      return;
     }
   
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
         body: text,
-      })
+      });
   
       if (!response.ok) {
-        throw new Error('Failed to generate flashcards')
+        throw new Error('Failed to generate flashcards');
       }
   
-      const data = await response.json()
-      setFlashcards(data)
+      const data = await response.json();
+      setFlashcards(data);
     } catch (error) {
-      console.error('Error generating flashcards:', error)
-      alert('An error occurred while generating flashcards. Please try again.')
+      console.error('Error generating flashcards:', error);
+      alert('An error occurred while generating flashcards. Please try again.');
     }
-  }
+  };
 
   const saveFlashcards = async () => {
     if (!setName.trim()) {
-      alert('Please enter a name for your flashcard set.')
-      return
+      alert('Please enter a name for your flashcard set.');
+      return;
     }
-  
+
     try {
-      const userDocRef = doc(collection(db, 'users'), user.id)
-      const userDocSnap = await getDoc(userDocRef)
-  
-      const batch = writeBatch(db)
-  
-      if (userDocSnap.exists()) {
-        const userData = userDocSnap.data()
-        const updatedSets = [...(userData.flashcardSets || []), { name: setName }]
-        batch.update(userDocRef, { flashcardSets: updatedSets })
-      } else {
-        batch.set(userDocRef, { flashcardSets: [{ name: setName }] })
-      }
-  
-      const setDocRef = doc(collection(userDocRef, 'flashcardSets'), setName)
-      batch.set(setDocRef, { flashcards })
-  
-      await batch.commit()
-  
-      alert('Flashcards saved successfully!')
-      handleCloseDialog()
-      setSetName('')
+      // Replace 'user.id' with actual user ID logic
+      const userId = 'user.id'; // Retrieve user ID from your auth context
+      const userDocRef = doc(db, 'users', userId);
+      
+      // Set or update the flashcard set
+      await setDoc(userDocRef, {
+        flashcardSets: [{ name: setName, flashcards }]
+      }, { merge: true });
+
+      // Alternatively, if you want to set it in a subcollection:
+      const setDocRef = doc(collection(userDocRef, 'flashcardSets'), setName);
+      await setDoc(setDocRef, { flashcards });
+
+      alert('Flashcards saved successfully!');
+      handleCloseDialog();
+      setSetName('');
     } catch (error) {
-      console.error('Error saving flashcards:', error)
-      alert('An error occurred while saving flashcards. Please try again.')
+      console.error('Error saving flashcards:', error);
+      alert('An error occurred while saving flashcards. Please try again.');
     }
-  }
+  };
 
   return (
     <Container maxWidth="md">
@@ -164,5 +160,5 @@ export default function Generate() {
         </DialogActions>
       </Dialog>
     </Container>
-  )
+  );
 }
