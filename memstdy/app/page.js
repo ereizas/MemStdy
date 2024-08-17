@@ -1,15 +1,14 @@
-// File: app/page.js
-
 'use client';
 
 import { Container, AppBar, Toolbar, Typography, Button, Box, Grid } from '@mui/material';
 import Head from 'next/head';
-import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import { SignedIn, SignedOut, UserButton, useClerk } from '@clerk/nextjs';
 import { useState } from 'react';
 import getStripe from '@/utils/get_stripe';
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
+  const { userId } = useClerk();  // Get the current Clerk user ID
 
   const handleCheckout = async (plan) => {
     setLoading(true);
@@ -18,20 +17,24 @@ export default function Home() {
       const response = await fetch('/api/checkout_sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, userId }),  // Include userId in the request payload
       });
 
       if (!response.ok) {
         throw new Error('Network response was not ok.');
       }
 
-      const { id } = await response.json();
+      const { id, error } = await response.json();
+      if (error) {
+        throw new Error(error.message);
+      }
+
       const stripe = await getStripe();
 
-      const { error } = await stripe.redirectToCheckout({ sessionId: id });
+      const { error: stripeError } = await stripe.redirectToCheckout({ sessionId: id });
 
-      if (error) {
-        console.warn('Stripe Checkout error:', error.message);
+      if (stripeError) {
+        console.warn('Stripe Checkout error:', stripeError.message);
       }
     } catch (error) {
       console.error('Error during checkout:', error);
@@ -51,7 +54,7 @@ export default function Home() {
           <Typography variant="h6" style={{ flexGrow: 1 }}>MemStdy Flashcard SaaS</Typography>
           <SignedOut>
             <Button color="inherit" href="/sign-in">Login</Button>
-            <Button color="inherit" href="/sign-in  ">Sign Up</Button>
+            <Button color="inherit" href="/sign-in">Sign Up</Button>
           </SignedOut>
           <SignedIn>
             <UserButton />

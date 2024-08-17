@@ -1,5 +1,3 @@
-// File: pages/api/checkout_sessions.js
-
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
@@ -13,7 +11,7 @@ const formatAmountForStripe = (amount) => {
 
 export async function POST(req) {
   try {
-    const { plan } = await req.json();
+    const { plan, userId } = await req.json();
     if (!plan) {
       throw new Error('Plan is required');
     }
@@ -49,8 +47,8 @@ export async function POST(req) {
           quantity: 1,
         },
       ],
-      success_url: `${req.headers.get('Referer')}result?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get('Referer')}result?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `https://your-domain.com/success?session_id={CHECKOUT_SESSION_ID}`, // Replace with your success URL
+      cancel_url: `https://your-domain.com/cancel?session_id={CHECKOUT_SESSION_ID}`, // Replace with your cancel URL
     };
 
     console.log('Creating Stripe checkout session with params:', params);
